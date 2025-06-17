@@ -1,13 +1,41 @@
 'use client'
 
-import React, { useEffect, useState, useRef } from 'react'
+import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { toast, Toaster } from 'sonner'
+import Image from 'next/image'
 
 export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
+  const [image, setImage] = useState<string | null>(null)
+  // reference to and html <video> element
   const videoRef = useRef<HTMLVideoElement>(null) 
+  // ref to canvas element to get video frame
+  const canvasRef = useRef<HTMLCanvasElement>(null)
 
-// check for mobile to use video feed
+  const takePhoto = useCallback(() => {
+    const video = videoRef.current
+    const canvas = canvasRef.current
+
+    if(video && canvas){
+      const context = canvas.getContext('2d')
+      console.log('context: ', context);
+      
+      if(context){
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        
+        context.drawImage(video, 0, 0, canvas.width, canvas.height)
+
+        const base64Data = canvas.toDataURL("image/jpeg", 0.9)
+        console.log("image data: ", base64Data);
+        
+        setImage(base64Data)
+        toast.success("Image captured!")
+      }
+    }
+  }, [])
+
+  // check for mobile to use video feed
   useEffect(() => {
     const checkMobile = () => {
       const mobileCheck = window.innerWidth < 768;
@@ -28,8 +56,6 @@ export default function HomePage(){
     };
   }, []); 
 
-
-
   useEffect(() => {
     const setupCamera = async () => {
       const currentVideo = videoRef.current; // Capture ref.current into a local variable, get video object
@@ -37,7 +63,7 @@ export default function HomePage(){
       if (currentVideo) { 
         console.log("setupCamera called: currentVideo is available.");
         try {
-          // use the back camera
+          // Initiate camera access, use the back camera
           const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
           console.log("getUserMedia succeeded. Stream obtained:", stream);
 
@@ -50,9 +76,8 @@ export default function HomePage(){
               console.log("Stream has video tracks. First track:", stream.getVideoTracks()[0]);
           }
 
-          currentVideo.srcObject = stream; // Use the non-null local variable
-          console.log("currentVideo.srcObject set to stream.");
-
+          // assign camera stream to <video> element
+          currentVideo.srcObject = stream; 
 
           // Listener to confirm when video is actually ready to play
           currentVideo.oncanplay = () => { 
@@ -70,7 +95,6 @@ export default function HomePage(){
           // Fallback if oncanplay or onloadedmetadata doesn't fire promptly
           setTimeout(() => {
             if (!currentVideo.srcObject || currentVideo.paused || currentVideo.ended || currentVideo.videoWidth === 0) {
-              console.warn("Camera stream not active after timeout, or dimensions are zero.");
               toast.error("Camera feed did not activate visually after timeout.");
             }
           }, 3000); // 3 second timeout
@@ -86,10 +110,8 @@ export default function HomePage(){
 
     // only start stream if no other stream is running and the video element is available
     if (isMobile && videoRef.current && !videoRef.current.srcObject) {
-      console.log("Conditions met for camera setup. Calling setupCamera().");
       setupCamera();
     }
-
     // Cleanup function for the camera stream
     return () => {
       // Remove listeners to prevent memory leaks
@@ -101,35 +123,75 @@ export default function HomePage(){
         (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
       }
     };
+    // ignoring warning because for this use case, 
+    // the effect must ben run when videoRef gets a valid DOM element to be assigned to (and doesnt need to re-render the the component)
   }, [isMobile, videoRef.current]); 
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col items-center justify-center p-4 font-inter">
+    <div className="min-h-screen bg-gray-100 flex flex-col p-4 font-inter">
       <Toaster position="top-center" richColors />
 
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden flex flex-col">
-        <div className="w-full flex flex-col p-4">
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh]">
+        <div className="md:w-1/2 w-full flex flex-col p-4 flex-grow">
           <h2 className="text-2xl font-bold mb-4">
             {isMobile ? "Capture Your Collection" : "Upload Your Collection (Desktop View)"}
           </h2>
-
-          {isMobile ? (
-            <div className="relative w-full aspect-video bg-gray-200 rounded-lg overflow-hidden">
-              <video
-                ref={videoRef}
-                className="w-full h-full object-cover"
-                playsInline
-                autoPlay
-                muted
-              ></video>
-            </div>
-          ) : (
-            <div className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
-              Desktop Upload Area
-            </div>
-          )}
+          <div className="flex-grow flex flex-col">
+            {isMobile ? (
+              <div className="relative w-full h-full flex-grow bg-gray-200 rounded-lg overflow-hidden">
+                {image ? (
+                  <Image 
+                    src={image} 
+                    alt="photo capture" 
+                    className="w-full h-full ibject-contain" 
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                  />
+                ) : (
+                  <video
+                    // assign DOM node to the ref we created
+                    ref={videoRef}
+                    className="w-full h-full object-cover flex-grow"
+                    playsInline
+                    autoPlay
+                    muted
+                  ></video>
+                )}
+                <canvas ref={canvasRef} style={{ display: 'none'}}></canvas>
+                <button
+                  onClick={takePhoto}
+                  className="
+                    absolute bottom-4 left-1/2 -translate-x-1/2
+                    w-20 h-20
+                    rounded-full
+                    bg-white
+                    flex items-center justify-center
+                    group
+                  "
+                >
+                  <div 
+                    className="
+                      w-16 h-16
+                      rounded-full
+                      bg-white
+                      group-active:bg-gray-200
+                      border-4
+                      flex items-center justify-center
+                    "
+                  >
+                  </div>
+                </button>
+              </div>
+            ) : (
+              <div className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
+                Desktop Upload Area
+              </div>
+            )}
+          </div>
         </div>
-        <div className="w-full p-4">
+
+        <div className="w-full p-4 flex-grow">
             <h2 className="text-2xl font-bold">Game Recommendations</h2>
             <p>Selectors and AI results will go here.</p>
         </div>
