@@ -8,6 +8,7 @@ interface AppRouterContextOptions {
 }
 
 export const createContext = async (opts: AppRouterContextOptions) => {
+    // eslint-disable-next-line
     const { req } = opts
 
     const user = null //placeholder
