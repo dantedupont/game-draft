@@ -4,9 +4,21 @@ import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { toast, Toaster } from 'sonner'
 import Image from 'next/image'
 
+// UI Components
+import { CardHeader, CardTitle, CardContent} from 'src/components/ui/card'
+import { Label } from 'src/components/ui/label'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from 'src/components/ui/select'
+
 export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
   const [image, setImage] = useState<string | null>(null)
+  const [playerCount, setIsPlayerCount] = useState('')
   // reference to and html <video> element
   const videoRef = useRef<HTMLVideoElement>(null) 
   // ref to canvas element to get video frame
@@ -18,7 +30,6 @@ export default function HomePage(){
 
     if(video && canvas){
       const context = canvas.getContext('2d')
-      console.log('context: ', context);
       
       if(context){
         canvas.width = video.videoWidth
@@ -136,6 +147,8 @@ export default function HomePage(){
           <h2 className="text-2xl font-bold mb-4">
             {isMobile ? "Capture Your Collection" : "Upload Your Collection (Desktop View)"}
           </h2>
+          
+          {/* IMAGE SECTION */}
           <div className="flex-grow flex flex-col">
             {isMobile ? (
               <div className="relative w-full h-full flex-grow bg-gray-200 rounded-lg overflow-hidden">
@@ -191,10 +204,33 @@ export default function HomePage(){
           </div>
         </div>
 
+        {/* SELECTION SECTION */}
         <div className="w-full p-4 flex-grow">
-            <h2 className="text-2xl font-bold">Game Recommendations</h2>
-            <p>Selectors and AI results will go here.</p>
+            <CardHeader className="p4">
+              <CardTitle className="text-2xl font-bold">Preferences</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Label className="text-lg">Player Count</Label>
+              <Select value={playerCount} onValueChange={setIsPlayerCount}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select player count"/>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="6">6</SelectItem>
+                  <SelectItem value="7">7</SelectItem>
+                  <SelectItem value="8">8</SelectItem>
+                  <SelectItem value="9">9</SelectItem>
+                  <SelectItem value="10+">10+</SelectItem>
+                </SelectContent>
+              </Select>
+            </CardContent>
         </div>
+      
       </div>
     </div>
   );
