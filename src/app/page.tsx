@@ -5,6 +5,7 @@ import { toast, Toaster } from 'sonner'
 import Image from 'next/image'
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { clsx } from 'clsx'
 
 // UI Components
 import { CardHeader, CardTitle, CardContent} from 'src/components/ui/card'
@@ -24,7 +25,8 @@ export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
   const [image, setImage] = useState<string | null>(null)
   const [playerCount, setPlayerCount] = useState('')
-  const [directRecommendationOutput, setDirectRecommendationOutput] = useState(''); // NEW STATE FOR DIRECT FETCH OUTPUT
+  const [directRecommendationOutput, setDirectRecommendationOutput] = useState('')
+  const [isDraggingOver, setIsDraggigngOver] = useState(false)
 
   //tRPC hooks
   const identifyGamesMutation = trpc.ai.identifyGamesInImage.useMutation();
@@ -34,6 +36,7 @@ export default function HomePage(){
   // Ref to canvas element to get video frame
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
+  // PHOTO BLOCK
   const takePhoto = useCallback(() => {
     const video = videoRef.current
     const canvas = canvasRef.current
@@ -74,7 +77,9 @@ export default function HomePage(){
       window.removeEventListener('resize', handleResize);
     };
   }, []);
-
+  ////////////////////////
+  //CAMERA SET UP/////////
+  ////////////////////////
   useEffect(() => {
     const setupCamera = async () => {
       const currentVideo = videoRef.current;
@@ -97,13 +102,6 @@ export default function HomePage(){
 
           currentVideo.oncanplay = () => {
             currentVideo.play();
-            currentVideo.onloadedmetadata = () => {
-              if (currentVideo.videoWidth === 0 || currentVideo.videoHeight === 0) {
-                toast.error("Camera stream appears to be inactive (0 dimensions).");
-              } else {
-                toast.success("Camera feed should be active!");
-              }
-            };
           };
 
           setTimeout(() => {
@@ -135,7 +133,47 @@ export default function HomePage(){
     };
   }, [isMobile, image]);
 
-  // Modified makeRecommendations to use direct fetch
+  ////////////////////////
+  //DESKTOP DRAG AND DROP/
+  ////////////////////////
+  const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDraggigngOver(true)
+  },[])
+  const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDraggigngOver(false)
+  },[])
+  const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
+    event.preventDefault()
+    setIsDraggigngOver(false)
+
+    if (event.dataTransfer.files.length > 0){
+      const file = event.dataTransfer.files[0]
+
+      // making sure its an image
+      if (!file.type.startsWith('image/')){
+        toast.error('Invalid file: please use an image file')
+        return;
+      }
+
+      const reader = new FileReader()
+
+      reader.onload = (event) => {
+        if(event.target?.result && typeof event.target.result === "string"){
+          setImage(event.target.result)
+          toast.success("Image uploaded!")
+        }
+      }
+
+      reader.readAsDataURL(file)
+    }
+
+  },[])
+
+  ////////////////////////
+  //RECOMMENDATIONS///////
+  ////////////////////////
   const makeRecommendations = useCallback(async () => {
     setDirectRecommendationOutput(''); // Clear previous output
 
@@ -173,11 +211,16 @@ export default function HomePage(){
         }
 
         const reader = response.body?.getReader();
+        if (!reader){
+          console.error("Failed to get stream reader from response")
+          return
+        }
+
         const decoder = new TextDecoder();
         let fullStreamText = '';
 
         while (true) {
-            const { done, value } = await reader!.read();
+            const { done, value } = await reader.read();
             if (done) {
                 console.log("Stream complete.");
                 break;
@@ -185,7 +228,7 @@ export default function HomePage(){
             const chunk = decoder.decode(value, { stream: true });
             console.log("Raw SSE Chunk received:", chunk); // Log the raw chunk
 
-            // Parse SSE data: Look for 'data: {json}\n\n'
+            // Parse SSE data: Look for 'data: {json}\n'
             // Split by newline to handle multiple SSE messages in one chunk
             const lines = chunk.split('\n').filter(line => line.trim().length > 0);
 
@@ -242,7 +285,7 @@ export default function HomePage(){
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh]">
         <div className="md:w-1/2 w-full flex flex-col p-4 flex-grow">
           <h2 className="text-2xl font-bold mb-4">
-            {isMobile ? "Capture Your Collection" : "Upload Your Collection (Desktop View)"}
+            {isMobile ? "Capture Your Collection" : "Upload Your Collection"}
           </h2>
 
           {/* IMAGE SECTION */}
@@ -293,8 +336,30 @@ export default function HomePage(){
                 </button>
               </div>
             ) : (
-              <div className="w-full h-64 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center text-gray-500">
-                Desktop Upload Area
+              <div className={clsx(
+                "relative w-full max-h-64 flex-grow bg-gray-50 rounded-lg overflow-hidden",
+                "border-2 border-dashed transition-colors duration-200",
+                "flex items-center justify-center",
+                isDraggingOver ? "border-indigo-600" : "border-gray-300"
+              )}
+                onDragOver={handleDragOver}
+                onDragLeave={handleDragLeave}
+                onDrop={handleDrop}
+              >
+                {image ? (
+                  <Image 
+                    src={image}
+                    alt="uploaded image"
+                    className="w-full h-full object-contain"
+                    width={0}
+                    height={0}
+                    sizes="100vw"
+                  />
+                ) : (
+                  <p className={clsx("text-lg transition-colors duration-200", isDraggingOver && "text-indigo-600")}>
+                    Drag and Drop Here
+                  </p>
+                )}
               </div>
             )}
           </div>
