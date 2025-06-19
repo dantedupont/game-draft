@@ -18,6 +18,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from 'src/components/ui/select'
+import { Spinner } from 'src/components/ui/spinner'
 
 import { trpc } from '@/trpc/client'
 
@@ -26,7 +27,9 @@ export default function HomePage(){
   const [image, setImage] = useState<string | null>(null)
   const [playerCount, setPlayerCount] = useState('')
   const [directRecommendationOutput, setDirectRecommendationOutput] = useState('')
-  const [isDraggingOver, setIsDraggigngOver] = useState(false)
+  const [isDraggingOver, setIsDraggingOver] = useState(false)
+  const [isLoading, setIsLoading] = useState(false)
+  const [buttonText, setButtonText] = useState("Recommend Games")
 
   //tRPC hooks
   const identifyGamesMutation = trpc.ai.identifyGamesInImage.useMutation();
@@ -138,15 +141,15 @@ export default function HomePage(){
   ////////////////////////
   const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
-    setIsDraggigngOver(true)
+    setIsDraggingOver(true)
   },[])
   const handleDragLeave = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
-    setIsDraggigngOver(false)
+    setIsDraggingOver(false)
   },[])
   const handleDrop = useCallback((event: React.DragEvent<HTMLDivElement>) => {
     event.preventDefault()
-    setIsDraggigngOver(false)
+    setIsDraggingOver(false)
 
     if (event.dataTransfer.files.length > 0){
       const file = event.dataTransfer.files[0]
@@ -175,7 +178,7 @@ export default function HomePage(){
   //RECOMMENDATIONS///////
   ////////////////////////
   const makeRecommendations = useCallback(async () => {
-    setDirectRecommendationOutput(''); // Clear previous output
+    setDirectRecommendationOutput('');
 
     if (!image) {
       toast.error("Please capture or select an image first.");
@@ -186,12 +189,13 @@ export default function HomePage(){
       return;
     }
 
+    setIsLoading(true)
+    setButtonText("Loading...")
+
     const identified = await identifyGamesMutation.mutateAsync({
         imageDataUrl: image,
     });
-    toast.success(`AI identified ${identified?.length || 0} games!`);
-
-    toast.info("Generating recommendations with AI (direct fetch)...");
+    toast.success(`I found some games!`);
 
     try {
         const response = await fetch('/api/recommendation', {
@@ -222,7 +226,8 @@ export default function HomePage(){
         while (true) {
             const { done, value } = await reader.read();
             if (done) {
-                console.log("Stream complete.");
+                setIsLoading(false)
+                setButtonText("Recommend Games")
                 break;
             }
             const chunk = decoder.decode(value, { stream: true });
@@ -250,14 +255,12 @@ export default function HomePage(){
                     } catch (parseError) {
                         console.error("Failed to parse JSON from SSE line:", jsonStr, parseError);
                         toast.error("Error parsing stream data.");
-                        // Optionally re-throw or handle error to stop processing
                     }
                 } else {
                     console.warn("Unexpected SSE line format:", line); // Log any lines not starting with 'data: '
                 }
             }
         }
-        toast.success("Recommendations generated (direct fetch)!");
         console.log("Full direct recommendation output:", fullStreamText);
 
      } catch (error: unknown) { // 'error' is of type 'unknown'
@@ -279,10 +282,10 @@ export default function HomePage(){
     ]); // Removed AI SDK completion dependencies
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-4 font-inter">
-      <Toaster position="top-center" richColors />
+    <div className="min-h-screen bg-gray-100 flex flex-col p-2 font-inter">
+      <Toaster position="bottom-center" richColors />
 
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh]">
+      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh] min-w-[320px]">
         <div className="md:w-1/2 w-full flex flex-col p-4 flex-grow">
           <h2 className="text-2xl font-bold mb-4">
             {isMobile ? "Capture Your Collection" : "Upload Your Collection"}
@@ -356,7 +359,7 @@ export default function HomePage(){
                     sizes="100vw"
                   />
                 ) : (
-                  <p className={clsx("text-lg transition-colors duration-200", isDraggingOver && "text-indigo-600")}>
+                  <p className={clsx("text-lg transition-colors duration-200 text-gray-300", isDraggingOver && "text-indigo-600")}>
                     Drag and Drop Here
                   </p>
                 )}
@@ -368,7 +371,7 @@ export default function HomePage(){
         {/* SELECTION SECTION */}
         <div className="w-full p-4 flex-grow space-y-4">
             <CardHeader className="p4">
-              <CardTitle className="text-2xl font-bold">Preferences</CardTitle>
+              <CardTitle className="text-xl font-semibold">Preferences</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center space-x-4">
@@ -395,22 +398,33 @@ export default function HomePage(){
           <CardContent>
             <Button
               className="max-w-s"
-              disabled={!image || !playerCount}
+              disabled={!image || isLoading}
               onClick={makeRecommendations}
             >
-              Recommend Games
+              {buttonText}
+              {isLoading && (
+                <Spinner size="small" className="text-gray-50" />
+              )}
             </Button>
+          </CardContent>
+
+          {/*Recommendation Section*/}
+          <CardContent>
+            <h3 className="text-xl font-semibold mb-2">Recommendations:</h3>
+            <div className="mt-2 p-4 h-100 overflow-y-auto leading-relaxed custom-scrollbar">
+              {directRecommendationOutput ? (
+                <div className="prose">
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {directRecommendationOutput}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                <p className="text-gray-300">Recommendations will appear here...</p>
+              )}
+            </div>
           </CardContent>
         </div>
 
-        {/*Recommendation Section*/}
-        {directRecommendationOutput &&
-            <CardContent>
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                {directRecommendationOutput}
-              </ReactMarkdown>
-            </CardContent>
-        }
       </div>
     </div>
   );
