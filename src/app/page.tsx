@@ -33,24 +33,6 @@ export default function HomePage(){
   // Ref to canvas element to get video frame
   const canvasRef = useRef<HTMLCanvasElement>(null)
 
-  // COMMENT OUT useCompletion for this test
-  // const {
-  //   completion: recommendationResponse,
-  //   complete: getRecommendations,
-  //   error: recommendationError,
-  //   setCompletion: setRecommendationResponse,
-  // } = useCompletion({
-  //   api: '/api/recommendation',
-  //   onFinish: (prompt:string, completion: string | null) => {
-  //     toast.success("Recommendations generated!");
-  //     console.log("Recommendation streaming finished:", completion);
-  //   },
-  //   onError: (error: Error) => {
-  //     toast.error("Recommendation failed: " + error.message);
-  //     console.error("AI SDK Recommendation error:", error);
-  //   },
-  // });
-
   const takePhoto = useCallback(() => {
     const video = videoRef.current
     const canvas = canvasRef.current
