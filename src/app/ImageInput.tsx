@@ -14,6 +14,7 @@ interface ImageInputProps {
 
 export default function ImageInput({ image, setImage, isMobile, onImageClear }: ImageInputProps) {
     const [isDraggingOver, setIsDraggingOver] = useState(false)
+    const [cameraStatus, setCameraStatus] = useState<'idle' | 'loading' | 'active'>('idle')
 
     // Reference to and html <video> element
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -52,11 +53,11 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
     //CAMERA SET UP/////////
     ////////////////////////
     useEffect(() => {
-        const setupCamera = async () => {
-        const currentVideo = videoRef.current;
-
+      const currentVideo = videoRef.current;
+      const setupCamera = async () => {
         if (currentVideo) {
             console.log("setupCamera called: currentVideo is available.");
+            setCameraStatus('loading')
             try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
             console.log("getUserMedia succeeded. Stream obtained:", stream);
@@ -73,6 +74,7 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
 
             currentVideo.oncanplay = () => {
                 currentVideo.play();
+                setCameraStatus('active')
             };
 
             } catch (error) {
@@ -84,19 +86,21 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
         }
         };
 
-        if (isMobile && videoRef.current && !videoRef.current.srcObject) {
+        if (isMobile && !image && cameraStatus === 'idle') {
             setupCamera();
         }
         return () => {
-        if (videoRef.current) {
-            videoRef.current.onloadedmetadata = null;
-            videoRef.current.oncanplay = null;
-        }
-        if (videoRef.current && videoRef.current.srcObject) {
-            (videoRef.current.srcObject as MediaStream).getTracks().forEach(track => track.stop());
-        }
+          if (currentVideo) {
+              currentVideo.onloadedmetadata = null;
+              currentVideo.oncanplay = null;
+              if (currentVideo.srcObject) {
+                (currentVideo.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+                currentVideo.srcObject = null
+              }
+          }
+          setCameraStatus('idle')
         };
-    }, [isMobile, image]);
+    }, [isMobile, image, cameraStatus]);
 
     ////////////////////////
     //DESKTOP DRAG AND DROP/
@@ -150,16 +154,62 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                       sizes="100vw"
                     />
                 ) : (
-                  <video
-                    ref={videoRef}
-                    className="w-full h-full object-cover flex-grow"
-                    playsInline
-                    autoPlay
-                    muted
-                  ></video>
+                  <>
+                    {cameraStatus === 'active' ? (
+                      <video
+                        ref={videoRef}
+                        className="w-full h-full object-cover flex-grow"
+                        playsInline
+                        autoPlay
+                        muted
+                      ></video>
+                    ) : (
+                      <div className="p-4">
+                      {cameraStatus === 'idle' && (
+                        <p className="text-lg text-gray-500">Initializing camera...</p>
+                      )}
+                      {cameraStatus === 'loading' && (
+                        <p className="text-lg text-gray-500">
+                          Please allow camera access if prompted
+                          <span className="animate-pulse text-gray-500">● ● ●</span>
+                        </p>
+                      )}
+                      </div>
+                    )}
+                  </>
                 )}
+
                 <canvas ref={canvasRef} style={{ display: 'none'}}></canvas>
-                {image ? (
+
+                {/*Take picture button*/}
+                {(!image && cameraStatus === 'active') && (
+                  <button
+                  onClick={takePhoto}
+                  className="
+                    absolute bottom-4 left-1/2 -translate-x-1/2
+                    w-20 h-20
+                    rounded-full
+                    bg-white
+                    flex items-center justify-center
+                    group
+                  "
+                >
+                  <div
+                    className="
+                      w-16 h-16
+                      rounded-full
+                      bg-white
+                      group-active:bg-gray-200
+                      border-4
+                      flex items-center justify-center
+                    "
+                  >
+                  </div>
+                </button>
+                )}
+
+                {/*Retake picture button*/}
+                {image && (
                   <button
                     onClick={retakePhoto}
                     className="
@@ -187,34 +237,11 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                     clear image
                   </div>
                 </button>
-                ) : (
-                <button
-                  onClick={takePhoto}
-                  className="
-                    absolute bottom-4 left-1/2 -translate-x-1/2
-                    w-20 h-20
-                    rounded-full
-                    bg-white
-                    flex items-center justify-center
-                    group
-                  "
-                >
-                  <div
-                    className="
-                      w-16 h-16
-                      rounded-full
-                      bg-white
-                      group-active:bg-gray-200
-                      border-4
-                      flex items-center justify-center
-                    "
-                  >
-                  </div>
-                </button>
                 )}
                 
               </div>
             ) : (
+              // if not mobile, show drag and drop area
               <div className={clsx(
                 "relative w-full max-h-64 flex-grow bg-gray-50 rounded-lg overflow-hidden",
                 "border-2 border-dashed transition-colors duration-200",
