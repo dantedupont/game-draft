@@ -36,7 +36,9 @@ export const aiRouter = router({
             } else {
                 console.log("DEBUG: base64Image is null or undefined.");
             }
-            const visionPrompt = "Identify all unique board game titles visible in this image. List them as a comma-separated string, e.g., 'Catan, Ticket to Ride, Splendor'. If no board games are identified, respond with 'None'."
+            const visionPrompt = `Identify all unique board game titles visible in this image. 
+                                List them as a comma-separated string, e.g., 'Game-1, Game-2, Game-3'. 
+                                If no board games are identified, respond with 'None'.`
             
             let rawIdentifiedNames: string[]= []
 
@@ -89,11 +91,19 @@ export const aiRouter = router({
             }
 
             /* NEXT: Canonicalize the games to validate and ensure consistency */
-            const canonicalizationPrompt = `Given the following list of potential board game titles: ${rawIdentifiedNames.join(', ')}.
-                 Please verify which of these are actual, real board game titles. For each real game, provide its most common, canonical name.
-                 Format your response as a JSON array of objects, like this:
-                 [{"gameName": "Canonical Game Name"}, {"gameName": "Another Canonical Game Name"}]
-                 Do not include any games that are not real board games.`;
+            let canonicalizationPrompt = ''
+            if(!rawIdentifiedNames || rawIdentifiedNames.length === 0){
+                 canonicalizationPrompt = `You have received an empty list of potential board game titles. 
+                    Your task is to return an empty JSON array, strictly conforming to the specified format.
+                    Format your response as a JSON array of objects, like this:
+                    [{"gameName": "Canonical Game Name"}, {"gameName": "Another Canonical Game Name"}].`;
+            } else {
+                canonicalizationPrompt = `Given the following comma-separated list of potential board game titles: "${rawIdentifiedNames.join(', ')}".
+                    Please verify which of these are actual, real board game titles. For each real game, provide its most common, canonical name.
+                    Format your response as a JSON array of objects, like this:
+                    [{"gameName": "Canonical Game Name"}, {"gameName": "Another Canonical Game Name"}].
+                    Do not include any games that are not real board games.`
+            }
 
             try {
                 const apiKey = process.env.GEMINI_API_KEY

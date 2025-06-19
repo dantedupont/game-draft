@@ -21,17 +21,33 @@ export async function POST(req: Request) {
     try {
     const { identifiedCollection, playerCount } = requestSchema.parse(await req.json());
     const identifiedNames = identifiedCollection.map(game => game.gameName).join(',')
-    const prompt = `You are a board game expert. 
-                    Provide a concise list of recommendationded board games.
-                    The user has the following board games in their collection: ${identifiedNames}.
-                    They are looking for games for ${playerCount} players.
-                    Based on your knowledge of board games, recommend only the games in their collection that are best suited for
-                    for ${playerCount} players.
-                    Keep your response brief and directly suggest games. Do not ask follow up questions.
-                    `
+
+     let promptContent: string;
+
+        if (!identifiedCollection || identifiedCollection.length === 0) {
+            promptContent = `You are a board game expert.
+                            Suggest board games suitable for ${playerCount} players. No specific games were identified from the image, 
+                            so please acknowledge that no games were identifid and provide general recommendations.
+                            Provide a concise, bulleted list of recommended games, including a brief description for each.
+                            Do not ask follow-up questions.
+                            Please format your suggestions using Markdown, 
+                            including bolding for game titles, bullet points for lists, and brief descriptions for each game.
+                            `
+        } else {
+             promptContent = `You are a board game expert. 
+                            Provide a concise list of recommended board games.
+                            The user has the following board games in their collection: ${identifiedNames}.
+                            They are looking for games for ${playerCount} players.
+                            Based on your knowledge of board games, recommend only the games in their collection that are best suited
+                            for ${playerCount} players.
+                            Keep your response brief and directly suggest games. Do not ask follow up questions.
+                            Please format your suggestions using Markdown, including bolding for game titles, 
+                            bullet points for lists, and brief descriptions for each game.
+                            `
+        }
     const result = await streamText({
       model: google("gemini-2.5-flash-lite-preview-06-17"), 
-      prompt: prompt,
+      prompt: promptContent,
       temperature: 0.6,
       maxTokens: 300, 
     });

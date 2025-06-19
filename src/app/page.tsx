@@ -3,7 +3,8 @@
 import React, { useEffect, useState, useRef, useCallback } from 'react'
 import { toast, Toaster } from 'sonner'
 import Image from 'next/image'
-// import { useCompletion } from '@ai-sdk/react' // COMMENT THIS OUT
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 // UI Components
 import { CardHeader, CardTitle, CardContent} from 'src/components/ui/card'
@@ -340,7 +341,9 @@ export default function HomePage(){
         {/*Recommendation Section*/}
         {directRecommendationOutput &&
             <CardContent>
-              {directRecommendationOutput}
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                {directRecommendationOutput}
+              </ReactMarkdown>
             </CardContent>
         }
       </div>
