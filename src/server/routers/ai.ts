@@ -12,7 +12,30 @@ export const aiRouter = router({
         .mutation(async ({ input }) => {
             // First: contact Gemini Vision to identify games
             const { imageDataUrl } = input // im starting to understand this type of destructure
-            const base64Image = imageDataUrl.split(','[1])
+            // --- NEW CRITICAL DEBUG LOGS ---
+            console.log("DEBUG: Raw imageDataUrl received (first 100 chars):", imageDataUrl ? imageDataUrl.substring(0, Math.min(100, imageDataUrl.length)) : 'null/undefined/empty');
+            console.log("DEBUG: Full imageDataUrl length:", imageDataUrl ? imageDataUrl.length : 'null/undefined/empty');
+            console.log("DEBUG: Does imageDataUrl contain a comma? ", imageDataUrl ? imageDataUrl.includes(',') : false);
+            // --- END NEW CRITICAL DEBUG LOGS ---
+
+            const parts = imageDataUrl.split(',');
+            console.log("DEBUG: Parts array after split:", parts);
+            console.log("DEBUG: Parts array length:", parts.length);
+
+            const base64Image = parts.length > 1 ? parts[1] : '';
+            // DEBUGGING
+            const mimeTypeMatch = imageDataUrl.match(/^data:(.*?);base64,/);
+            const dynamicMimeType = mimeTypeMatch && mimeTypeMatch[1] ? mimeTypeMatch[1] : 'image/jpeg'; // Default to jpeg if extraction fails
+            
+            console.log("DEBUG: Dynamically determined mimeType:", dynamicMimeType);
+            console.log("DEBUG: Type of base64Image:", typeof base64Image);
+            console.log("DEBUG: Length of base64Image:", base64Image ? base64Image.length : 'null/undefined');
+            if (base64Image) {
+                console.log("DEBUG: First 50 chars of base64Image:", base64Image.substring(0, 50));
+                console.log("DEBUG: Last 50 chars of base64Image:", base64Image.substring(base64Image.length - 50, base64Image.length));
+            } else {
+                console.log("DEBUG: base64Image is null or undefined.");
+            }
             const visionPrompt = "Identify all unique board game titles visible in this image. List them as a comma-separated string, e.g., 'Catan, Ticket to Ride, Splendor'. If no board games are identified, respond with 'None'."
             
             let rawIdentifiedNames: string[]= []
@@ -27,8 +50,8 @@ export const aiRouter = router({
                             parts: [
                                 { text: visionPrompt },
                                 {
-                                    inlineData: {
-                                        mimeType: "image/jpeg",
+                                    inline_data: {
+                                        mime_type: "image/jpeg",
                                         data: base64Image
                                     }
                                 }
@@ -40,6 +63,7 @@ export const aiRouter = router({
                         maxOutputTokens: 50,
                     }
                 };
+                console.log("Vision API Payload:", JSON.stringify(visionPayload, null, 2));
                 const visionApiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
                 const visionResponse = await fetch(visionApiUrl, {
                     method: 'POST',
@@ -48,11 +72,12 @@ export const aiRouter = router({
                 })
 
                 if (!visionResponse.ok) {
-                    const errorBody = await visionResponse.text
+                    const errorBody = await visionResponse.text()
                     throw new Error(`Gemini Vision API failed: ${visionResponse.status} ${visionResponse.statusText} - ${errorBody}`)
                 }
 
                 const visionResult = await visionResponse.json()
+                console.log("Raw Vision Response:", JSON.stringify(visionResult, null, 2));
                 const visionText = visionResult.candidates?.[0]?.content?.parts?.[0]?.text // resolve to undefined if any property is missing
 
                 if(visionText && visionText.toLowerCase().trim() !== 'none' && visionText.trim() !== ''){

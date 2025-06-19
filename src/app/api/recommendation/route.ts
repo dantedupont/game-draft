@@ -22,7 +22,7 @@ export async function POST(req: Request) {
     const { identifiedCollection, playerCount } = requestSchema.parse(await req.json());
     const identifiedNames = identifiedCollection.map(game => game.gameName).join(',')
     const prompt = `You are a board game expert. 
-                    Provide a concise recommendation for board games. 
+                    Provide a concise list of recommendationded board games.
                     The user has the following board games in their collection: ${identifiedNames}.
                     They are looking for games for ${playerCount} players.
                     Based on your knowledge of board games, recommend only the games in their collection that are best suited for
