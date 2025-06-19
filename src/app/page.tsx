@@ -62,6 +62,11 @@ export default function HomePage(){
     }
   }, [])
 
+  const retakePhoto = useCallback(() => {
+    setImage(null)
+    setDirectRecommendationOutput('')
+  },[])
+
   // check for mobile to use video feed
   useEffect(() => {
     const checkMobile = () => {
@@ -106,12 +111,6 @@ export default function HomePage(){
           currentVideo.oncanplay = () => {
             currentVideo.play();
           };
-
-          setTimeout(() => {
-            if (!currentVideo.srcObject || currentVideo.paused || currentVideo.ended || currentVideo.videoWidth === 0) {
-              toast.error("Camera feed did not activate visually after timeout.");
-            }
-          }, 3000);
 
         } catch (error) {
           console.error("Error accessing camera: ", error);
@@ -296,14 +295,14 @@ export default function HomePage(){
             {isMobile ? (
               <div className="relative w-full h-full flex-grow bg-gray-200 rounded-lg overflow-hidden">
                 {image ? (
-                  <Image
-                    src={image}
-                    alt="photo capture"
-                    className="w-full h-full ibject-contain"
-                    width={0}
-                    height={0}
-                    sizes="100vw"
-                  />
+                    <Image
+                      src={image}
+                      alt="photo capture"
+                      className="w-full h-full ibject-contain"
+                      width={0}
+                      height={0}
+                      sizes="100vw"
+                    />
                 ) : (
                   <video
                     ref={videoRef}
@@ -314,6 +313,35 @@ export default function HomePage(){
                   ></video>
                 )}
                 <canvas ref={canvasRef} style={{ display: 'none'}}></canvas>
+                {image ? (
+                  <button
+                    onClick={retakePhoto}
+                    className="
+                      absolute bottom-4 left-1/2 -translate-x-1/2
+                      w-20 h-20
+                      rounded-full
+                      bg-white
+                      flex items-center justify-center
+                      group
+                    "
+                  >
+                  <div
+                    className="
+                      w-16 h-16
+                      rounded-full
+                      bg-white
+                      group-active:bg-gray-200
+                      border-4
+                      flex items-center justify-center
+                      text-gray-400
+                      font-semibold
+                      text-xs
+                    "
+                  >
+                    clear image
+                  </div>
+                </button>
+                ) : (
                 <button
                   onClick={takePhoto}
                   className="
@@ -337,6 +365,8 @@ export default function HomePage(){
                   >
                   </div>
                 </button>
+                )}
+                
               </div>
             ) : (
               <div className={clsx(
