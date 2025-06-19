@@ -24,15 +24,17 @@ import ImageInput from './ImageInput';
 export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
   const [image, setImage] = useState<string | null>(null)
-  const [playerCount, setPlayerCount] = useState('')
   const [directRecommendationOutput, setDirectRecommendationOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
   const [buttonText, setButtonText] = useState("Recommend Games")
+  // Preference Selectors
+  const [playerCount, setPlayerCount] = useState('')
+  const [playingTime, setPlayingTime] = useState('')
 
   //tRPC hooks
   const identifyGamesMutation = trpc.ai.identifyGamesInImage.useMutation();
 
-    // check for mobile to use video feed
+  // check for mobile to use video feed
   useEffect(() => {
     const checkMobile = () => {
       const mobileCheck = window.innerWidth < 768;
@@ -61,8 +63,8 @@ export default function HomePage(){
       toast.error("Please capture or select an image first.");
       return;
     }
-    if (!playerCount) {
-      toast.error("Please select player count.");
+    if (!playerCount || !playingTime) {
+      toast.error("Please select a player count and playing time");
       return;
     }
 
@@ -82,7 +84,8 @@ export default function HomePage(){
             },
             body: JSON.stringify({
                 identifiedCollection: identified || [],
-                playerCount
+                playerCount,
+                playingTime
             })
         });
 
@@ -156,12 +159,14 @@ export default function HomePage(){
       image,
       playerCount,
       identifyGamesMutation,
+      playingTime
     ]); // Removed AI SDK completion dependencies
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col p-2 font-inter">
       <Toaster position="bottom-center" richColors />
 
+      {/* Image Input*/}
       <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh] min-w-[320px]">
         <div className="md:w-1/2 w-full flex flex-col p-4 flex-grow">
           <h2 className="text-2xl font-bold mb-4">
@@ -181,25 +186,43 @@ export default function HomePage(){
               <CardTitle className="text-xl font-semibold">Preferences</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="flex items-center space-x-4">
+              <div className="flex flex-col space-y-4">
+                <div className="flex flex-row space-x-2">
                 <Label className="text-sm">Player Count:</Label>
-                <Select value={playerCount} onValueChange={setPlayerCount}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select player count"/>
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1">1</SelectItem>
-                    <SelectItem value="2">2</SelectItem>
-                    <SelectItem value="3">3</SelectItem>
-                    <SelectItem value="4">4</SelectItem>
-                    <SelectItem value="5">5</SelectItem>
-                    <SelectItem value="6">6</SelectItem>
-                    <SelectItem value="7">7</SelectItem>
-                    <SelectItem value="8">8</SelectItem>
-                    <SelectItem value="9">9</SelectItem>
-                    <SelectItem value="10+">10+</SelectItem>
-                  </SelectContent>
-                </Select>
+                  <Select value={playerCount} onValueChange={setPlayerCount}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Select player count"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1">1</SelectItem>
+                      <SelectItem value="2">2</SelectItem>
+                      <SelectItem value="3">3</SelectItem>
+                      <SelectItem value="4">4</SelectItem>
+                      <SelectItem value="5">5</SelectItem>
+                      <SelectItem value="6">6</SelectItem>
+                      <SelectItem value="7">7</SelectItem>
+                      <SelectItem value="8">8</SelectItem>
+                      <SelectItem value="9">9</SelectItem>
+                      <SelectItem value="10+">10+</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                <div className="flex flex-row space-x-2">
+                  <Label className="text-sm">Playing Time:</Label>
+                  <Select value={playingTime} onValueChange={setPlayingTime}>
+                    <SelectTrigger className="w-48">
+                      <SelectValue placeholder="Select playing time"/>
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Quick (< 30 mins)">{"Quick (<30 mins)"}</SelectItem>
+                      <SelectItem value="Short (30-60 mins)">{"Short (30-60 mins)"}</SelectItem>
+                      <SelectItem value="Medium (1-2 hours)">{"Medium (1-2 hours)"}</SelectItem>
+                      <SelectItem value="Long (2-4 hours)">{"Long (2-4 hours)"}</SelectItem>
+                      <SelectItem value="Super Long (4+ hours)">{"Super Long (4+ hours)"}</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
           </CardContent>
           <CardContent>

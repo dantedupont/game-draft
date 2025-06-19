@@ -14,12 +14,13 @@ const requestSchema = z.object({
         gameName: z.string(),
         bggId: z.string().nullable().optional()
     })),
-    playerCount: z.string()
+    playerCount: z.string(),
+    playingTime: z.string()
 })
 
 export async function POST(req: Request) {
     try {
-    const { identifiedCollection, playerCount } = requestSchema.parse(await req.json());
+    const { identifiedCollection, playerCount, playingTime } = requestSchema.parse(await req.json());
     const identifiedNames = identifiedCollection.map(game => game.gameName).join(',')
 
      let promptContent: string;
@@ -27,8 +28,8 @@ export async function POST(req: Request) {
         if (!identifiedCollection || identifiedCollection.length === 0) {
             promptContent = `You are a board game expert. Don't mention this fact.
                             Please make sure to acknowledge that no games were identified and provide general recommendations
-                            of board games suitable for ${playerCount} players.
-                            Provide a very concise, bulleted list of 3-5 recommended games, including an extremely brief description for each.
+                            of board games suitable for ${playerCount} players, with a ${playingTime} playing time.
+                            Provide a bulleted list of 3-5 recommended games, including an extremely brief description for each.
                             Do not ask follow-up questions.
                             Please format your suggestions using Markdown, 
                             including bolding for game titles, and bullet points for lists.
@@ -37,10 +38,10 @@ export async function POST(req: Request) {
              promptContent = `You are a board game expert. Don't mention this fact. 
                             Provide a very concise list of recommended board games.
                             The user has the following board games in their collection: ${identifiedNames}.
-                            They are looking for games for ${playerCount} players.
+                            They are looking for games for ${playerCount} players, with a ${playingTime} playing time.
                             Based on your knowledge of board games, recommend only the games in their collection that are best suited
-                            for ${playerCount} players.
-                            Keep your response brief and directly suggest games. Do not ask follow up questions.
+                            for ${playerCount} players and for the ${playingTime} playing time.
+                            Provide a bulleted list of your suggested games. Do not ask follow up questions.
                             Please format your suggestions using Markdown, including bolding for game titles, 
                             bullet points for lists, and very brief descriptions for each game.
                             `
