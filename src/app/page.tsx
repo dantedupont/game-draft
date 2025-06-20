@@ -2,25 +2,13 @@
 
 import React, { useEffect, useState, useCallback } from 'react'
 import { toast, Toaster } from 'sonner'
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
-
-// UI Components
-import { Card, CardHeader, CardFooter, CardTitle, CardContent} from 'src/components/ui/card'
-import { Button } from 'src/components/ui/button'
-import { Label } from 'src/components/ui/label'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from 'src/components/ui/select'
-import { Spinner } from 'src/components/ui/spinner'
-
-import { trpc } from '@/trpc/client'
-import ImageInput from './ImageInput';
 import Image from 'next/image'
+import { trpc } from '@/trpc/client'
+
+import { Card, CardHeader, CardTitle, CardContent} from '@/components/ui/card'
+import ImageInput from './ImageInput';
+import Recommendations from './Recommendations';
+import Preferences from './Preferences'
 
 export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
@@ -196,85 +184,22 @@ export default function HomePage(){
     <div className="md:w-1/2 w-full flex flex-col gap-2 mt-2 md:mt-0">
 
       {/* Card 1: Preferences */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Preferences</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex flex-row items-center space-x-2">
-            <Label className="w-24 text-sm">Player Count:</Label>
-            <Select value={playerCount} onValueChange={setPlayerCount}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="1">1</SelectItem>
-                  <SelectItem value="2">2</SelectItem>
-                  <SelectItem value="3">3</SelectItem>
-                  <SelectItem value="4">4</SelectItem>
-                  <SelectItem value="5">5</SelectItem>
-                  <SelectItem value="6">6</SelectItem>
-                  <SelectItem value="7">7</SelectItem>
-                  <SelectItem value="8">8</SelectItem>
-                  <SelectItem value="9">9</SelectItem>
-                  <SelectItem value="10+">10+</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-          <div className="flex flex-row items-center space-x-2">
-            <Label className="w-24 text-sm">Playing Time:</Label>
-            <Select value={playingTime} onValueChange={setPlayingTime}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Quick (< 30 mins)">{"Quick (<30 mins)"}</SelectItem>
-                  <SelectItem value="Short (30-60 mins)">{"Short (30-60 mins)"}</SelectItem>
-                  <SelectItem value="Medium (1-2 hours)">{"Medium (1-2 hours)"}</SelectItem>
-                  <SelectItem value="Long (2-4 hours)">{"Long (2-4 hours)"}</SelectItem>
-                  <SelectItem value="Super Long (4+ hours)">{"Super Long (4+ hours)"}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button
-            className="w-full sm:w-auto" 
-            disabled={!image || isLoading}
-            onClick={makeRecommendations}
-          >
-            {isLoading ? (
-              <>
-                Loading...
-                <Spinner size="small" className="ml-2 h-4 w-4 text-white" />
-              </>
-            ) : (
-              "Recommend Games"
-            )}
-          </Button>
-        </CardFooter>
-      </Card>
+      <Preferences 
+        playerCount={playerCount}
+        setPlayerCount={setPlayerCount}
+        playingTime={playingTime}
+        setPlayingTime={setPlayingTime}
+        isLoading={isLoading}
+        makeRecommendations={makeRecommendations}
+        image={image}
+      />
 
       {/* Card 2: Recommendations */}
-      <Card className="flex-grow flex flex-col">
-        <CardHeader>
-          <CardTitle className="text-xl font-bold">Recommendations</CardTitle>
-        </CardHeader>
-        <CardContent className="flex-grow overflow-y-auto">
-            <div className="prose max-w-none">
-              {directRecommendationOutput ? (
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {directRecommendationOutput}
-                </ReactMarkdown>
-              ) : (
-                <p className="text-border">Recommendations will appear here...</p>
-              )}
-            </div>
-        </CardContent>
-      </Card>
+      <Recommendations output={directRecommendationOutput} />
 
     </div>
   </div>
 </div>
   );
 }
+
