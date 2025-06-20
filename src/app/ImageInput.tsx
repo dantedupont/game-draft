@@ -13,8 +13,11 @@ interface ImageInputProps {
 }
 
 export default function ImageInput({ image, setImage, isMobile, onImageClear }: ImageInputProps) {
+    console.log("ImageInput: Component Rendered"); 
+    console.log('isMobile:', isMobile)
     const [isDraggingOver, setIsDraggingOver] = useState(false)
-    const [cameraStatus, setCameraStatus] = useState<'idle' | 'loading' | 'active'>('idle')
+    const [cameraStatus, setCameraStatus] = useState<'idle' | 'loading' | 'active' | 'error'>('idle')
+    const [videoContainerHeight, setVideoContainerHeight] = useState<number | undefined>(undefined);
 
     // Reference to and html <video> element
     const videoRef = useRef<HTMLVideoElement>(null)
@@ -46,6 +49,7 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
 
     const retakePhoto = useCallback(() => {
         setImage(null)
+        setCameraStatus('idle');
         onImageClear()
     },[onImageClear, setImage])
 
@@ -53,10 +57,16 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
     //CAMERA SET UP/////////
     ////////////////////////
     useEffect(() => {
+      console.log("ImageInput useEffect: Effect Mounted or Dependencies Changed");
       const currentVideo = videoRef.current;
       const setupCamera = async () => {
         if (currentVideo) {
             console.log("setupCamera called: currentVideo is available.");
+            if (currentVideo.srcObject) {
+              console.log("Clearing previous stream from video element before new setup.");
+              (currentVideo.srcObject as MediaStream).getTracks().forEach(track => track.stop());
+              currentVideo.srcObject = null; // Important to nullify the reference
+            }
             setCameraStatus('loading')
             try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { exact: "environment" } } });
@@ -65,21 +75,68 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
             if (stream.getVideoTracks().length === 0) {
                 console.error("Stream obtained but has NO VIDEO TRACKS!");
                 toast.error("Camera stream has no video tracks. Is camera functional?");
+                setCameraStatus('error')
                 return;
             } else {
-                console.log("Stream has video tracks. First track:", stream.getVideoTracks()[0]);
+                const videoTrack = stream.getVideoTracks()[0];
+                console.log("Stream has video tracks. First track:", videoTrack);
+                console.log("First track readyState (immediately after getting track):", videoTrack.readyState);
+
+                // Set onended listener for the track
+                videoTrack.onended = () => {
+                    console.error("!!!! MediaStreamTrack ENDED EVENT FIRED! Current readyState:", videoTrack.readyState, "!!!!");
+                    toast.error("Camera stream ended unexpectedly. Device/OS issue or camera conflict?");
+                };
+
+                // Correct Placement: Set oninactive listener for the STREAM here
+                // immediately after obtaining the 'stream' object
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                (stream as any).oninactive = () => { // Use type assertion
+                    console.error("!!!! MediaStream INACTIVE EVENT FIRED! Stream active status:", stream.active, "!!!!");
+                    toast.error("Camera stream became inactive. Re-initializing...");
+                    setCameraStatus('idle'); // Set to idle, so the useEffect can attempt to restart
+                };
             }
 
             currentVideo.srcObject = stream;
+            console.log("Stream attached to video element. srcObject:", currentVideo.srcObject);
+            console.log("Video element readyState AFTER srcObject set:", currentVideo.readyState);
+            currentVideo.onloadedmetadata = () => {
+              console.log("onloadedmetadata event fired!");
+              console.log("Video dimensions:", currentVideo.videoWidth, "x", currentVideo.videoHeight);
+              console.log("Video element readyState onloadedmetadata:", currentVideo.readyState);
+              if (currentVideo.videoWidth > 0 && currentVideo.videoHeight > 0) {
+                // Get the actual rendered width of the video element (which should be w-full of its parent)
+                const renderedWidth = currentVideo.offsetWidth; // This gives us the real pixel width
+                const aspectRatio = currentVideo.videoHeight / currentVideo.videoWidth;
+                const calculatedHeight = renderedWidth * aspectRatio;
+
+                console.log(`Dynamically setting container height to: ${calculatedHeight}px (Based on width: ${renderedWidth}px, Aspect Ratio: ${aspectRatio.toFixed(2)})`);
+                setVideoContainerHeight(calculatedHeight);
+              } else {
+                  setVideoContainerHeight(undefined); // Reset if dimensions are invalid
+              }
+            };
 
             currentVideo.oncanplay = () => {
-                currentVideo.play();
-                setCameraStatus('active')
+              console.log("oncanplay event fired!");
+              console.log("Video element readyState oncanplay:", currentVideo.readyState); // NEW LOG
+              currentVideo.play()
+                .then(() => {
+                  setCameraStatus('active');
+                  console.log('Video play() successful, camera status active!');
+                  toast.success("Camera feed should be active!");
+                })
+                .catch(playError => {
+                    console.error('Error attempting to play video:', playError);
+                    toast.error("Failed to play camera stream. Autoplay might be blocked or device issue.");
+                });
             };
 
             } catch (error) {
             console.error("Error accessing camera: ", error);
             toast.error("Failed to access camera. Please check permissions and try again.");
+            setCameraStatus('error');
             }
         } else {
             console.log("videoRef.current is NOT available when setupCamera was called (inside camera effect).");
@@ -90,17 +147,23 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
             setupCamera();
         }
         return () => {
+          console.log("ImageInput useEffect: Cleanup Running");
           if (currentVideo) {
               currentVideo.onloadedmetadata = null;
               currentVideo.oncanplay = null;
               if (currentVideo.srcObject) {
+                console.log("ImageInput useEffect Cleanup: Stopping camera tracks.");
                 (currentVideo.srcObject as MediaStream).getTracks().forEach(track => track.stop());
                 currentVideo.srcObject = null
               }
           }
-          setCameraStatus('idle')
         };
-    }, [isMobile, image, cameraStatus]);
+    // This ESLint rule is disabled because 'cameraStatus' is used in the 'if' condition
+    // but its changes should NOT trigger a re-run of this effect.
+    // Including it would cause an infinite loop of camera activation/deactivation.
+    // The effect should only re-run when 'isMobile' or 'image' changes.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isMobile, image]);
 
     ////////////////////////
     //DESKTOP DRAG AND DROP/
@@ -134,46 +197,52 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
             toast.success("Image uploaded!")
             }
         }
-
         reader.readAsDataURL(file)
         }
 
     },[setImage])
 
     return(
-        <div className="flex-grow flex flex-col">
+        <div className="flex-grow flex flex-col min-h-0">
             {isMobile ? (
-              <div className="relative w-full h-full flex-grow bg-gray-200 rounded-lg overflow-hidden">
+              <div className="relative w-full bg-gray-200 rounded-lg overflow-hidden"
+              style={videoContainerHeight ? { height: `${videoContainerHeight}px` } : {}}
+              >
                 {image ? (
                     <Image
                       src={image}
                       alt="photo capture"
-                      className="w-full h-full ibject-contain"
+                      className="absolute top-0 left-0 w-full h-full object-contain"
                       width={0}
                       height={0}
                       sizes="100vw"
                     />
                 ) : (
                   <>
-                    {cameraStatus === 'active' ? (
-                      <video
+                    <video
                         ref={videoRef}
-                        className="w-full h-full object-cover flex-grow"
+                        className="absolute top-0 left-0 w-full h-full object-cover"
                         playsInline
                         autoPlay
                         muted
                       ></video>
-                    ) : (
+                    {cameraStatus !== 'active' && (
                       <div className="p-4">
-                      {cameraStatus === 'idle' && (
-                        <p className="text-lg text-gray-500">Initializing camera...</p>
-                      )}
-                      {cameraStatus === 'loading' && (
-                        <p className="text-lg text-gray-500">
-                          Please allow camera access if prompted
-                          <span className="animate-pulse text-gray-500">● ● ●</span>
-                        </p>
-                      )}
+                        {cameraStatus === 'idle' && (
+                          <p className="text-lg text-gray-500">Initializing camera...</p>
+                        )}
+                        {cameraStatus === 'loading' && (
+                          <p className="text-lg text-gray-500">
+                            Please allow camera access when prompted
+                            <span className="animate-pulse text-gray-500">● ● ●</span>
+                          </p>
+                        )}
+                        {cameraStatus === 'error' && (
+                          <p className="text-lg text-red-600 font-semibold">
+                            Camera access failed.
+                            <br/>Please check permissions.
+                          </p>
+                        )}
                       </div>
                     )}
                   </>
