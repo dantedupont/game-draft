@@ -20,6 +20,7 @@ import { Spinner } from 'src/components/ui/spinner'
 
 import { trpc } from '@/trpc/client'
 import ImageInput from './ImageInput';
+import Image from 'next/image'
 
 export default function HomePage(){
   const [isMobile, setIsMobile] = useState(false)
@@ -169,7 +170,14 @@ export default function HomePage(){
     {/* --- LEFT COLUMN --- */}
     <div className="md:w-1/2 w-full flex flex-col">
       <Card className="flex-grow flex flex-col">
-        <CardHeader>
+        <CardHeader className="flex flex-row items-center gap-1">
+          <Image
+            src="/logov2.svg"
+            alt="Game Draft Logo"
+            width={512}
+            height={512}
+            className="h-10 w-auto" 
+          />
           <CardTitle className="text-xl font-bold">
             {isMobile ? "Capture Your Collection" : "Upload Your Collection"}
           </CardTitle>
