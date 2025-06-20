@@ -101,20 +101,22 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
             currentVideo.srcObject = stream;
             console.log("Stream attached to video element. srcObject:", currentVideo.srcObject);
             console.log("Video element readyState AFTER srcObject set:", currentVideo.readyState);
+
             currentVideo.onloadedmetadata = () => {
               console.log("onloadedmetadata event fired!");
               console.log("Video dimensions:", currentVideo.videoWidth, "x", currentVideo.videoHeight);
               console.log("Video element readyState onloadedmetadata:", currentVideo.readyState);
               if (currentVideo.videoWidth > 0 && currentVideo.videoHeight > 0) {
                 // Get the actual rendered width of the video element (which should be w-full of its parent)
-                const renderedWidth = currentVideo.offsetWidth; // This gives us the real pixel width
+                const renderedWidth = currentVideo.offsetWidth; 
+                console.log("DEBUG: currentVideo.offsetWidth at onloadedmetadata:", renderedWidth);
                 const aspectRatio = currentVideo.videoHeight / currentVideo.videoWidth;
                 const calculatedHeight = renderedWidth * aspectRatio;
 
                 console.log(`Dynamically setting container height to: ${calculatedHeight}px (Based on width: ${renderedWidth}px, Aspect Ratio: ${aspectRatio.toFixed(2)})`);
                 setVideoContainerHeight(calculatedHeight);
               } else {
-                  setVideoContainerHeight(undefined); // Reset if dimensions are invalid
+                  setVideoContainerHeight(undefined);
               }
             };
 
@@ -205,8 +207,10 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
     return(
         <div className="flex-grow flex flex-col min-h-0">
             {isMobile ? (
-              <div className="relative w-full bg-gray-200 rounded-lg overflow-hidden"
-              style={videoContainerHeight ? { height: `${videoContainerHeight}px` } : {}}
+              <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden"
+              style={videoContainerHeight ? 
+                { height: `${videoContainerHeight}px` } 
+                : {minHeight: 300}}
               >
                 {image ? (
                     <Image
@@ -227,14 +231,14 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                         muted
                       ></video>
                     {cameraStatus !== 'active' && (
-                      <div className="p-4">
+                      <div className="p-4 flex items-center justify-center text-center">
                         {cameraStatus === 'idle' && (
-                          <p className="text-lg text-gray-500">Initializing camera...</p>
+                          <p className="text-lg text-gray-500 flex items-center">Initializing camera...</p>
                         )}
                         {cameraStatus === 'loading' && (
                           <p className="text-lg text-gray-500">
                             Please allow camera access when prompted
-                            <span className="animate-pulse text-gray-500">● ● ●</span>
+                            <span className="animate-pulse text-gray-500 text-xs"> ● ● ●</span>
                           </p>
                         )}
                         {cameraStatus === 'error' && (
