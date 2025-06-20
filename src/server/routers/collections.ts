@@ -12,7 +12,6 @@ export const collectionRouter = router({
             } catch (error) {
                 console.log("Error testing DB connection via TRPC", error);
                 throw new Error("Failed to connect to database via TRPC")
-                
             }
         })
 })

@@ -6,7 +6,7 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
 // UI Components
-import { CardHeader, CardTitle, CardContent} from 'src/components/ui/card'
+import { Card, CardHeader, CardFooter, CardTitle, CardContent} from 'src/components/ui/card'
 import { Button } from 'src/components/ui/button'
 import { Label } from 'src/components/ui/label'
 import {
@@ -26,7 +26,6 @@ export default function HomePage(){
   const [image, setImage] = useState<string | null>(null)
   const [directRecommendationOutput, setDirectRecommendationOutput] = useState('')
   const [isLoading, setIsLoading] = useState(false)
-  const [buttonText, setButtonText] = useState("Recommend Games")
   // Preference Selectors
   const [playerCount, setPlayerCount] = useState('')
   const [playingTime, setPlayingTime] = useState('')
@@ -69,7 +68,6 @@ export default function HomePage(){
     }
 
     setIsLoading(true)
-    setButtonText("Loading...")
 
     const identified = await identifyGamesMutation.mutateAsync({
         imageDataUrl: image,
@@ -106,8 +104,6 @@ export default function HomePage(){
         while (true) {
             const { done, value } = await reader.read();
             if (done) {
-                setIsLoading(false)
-                setButtonText("Recommend Games")
                 break;
             }
             const chunk = decoder.decode(value, { stream: true });
@@ -154,6 +150,8 @@ export default function HomePage(){
             toast.error("An unexpected error occurred during recommendation.");
             console.error("Direct fetch Recommendation error:", error);
         }
+    } finally {
+        setIsLoading(false)
     }
   },[
       image,
@@ -163,99 +161,112 @@ export default function HomePage(){
     ]); // Removed AI SDK completion dependencies
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col p-2 font-inter">
-      <Toaster position="bottom-center" richColors />
+   <div className="min-h-screen bg-background flex flex-col p-3 font-inter items-center">
+  <Toaster position="bottom-center" richColors />
 
-      {/* Image Input*/}
-      <div className="w-full max-w-4xl bg-white rounded-lg shadow-lg overflow-hidden md:flex flex-grow min-h-[90vh] min-w-[320px]">
-        <div className="md:w-1/2 w-full flex flex-col p-4 flex-grow">
-          <h2 className="text-2xl font-bold mb-4">
+  <div className="w-full max-w-6xl md:flex md:gap-2 flex-grow">
+
+    {/* --- LEFT COLUMN --- */}
+    <div className="md:w-1/2 w-full flex flex-col">
+      <Card className="flex-grow flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">
             {isMobile ? "Capture Your Collection" : "Upload Your Collection"}
-          </h2>
-          <ImageInput 
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow flex flex-col">
+          <ImageInput
             image={image}
             setImage={setImage}
             isMobile={isMobile}
             onImageClear={() => setDirectRecommendationOutput('')}
           />
-        </div>
+        </CardContent>
+      </Card>
+    </div>
 
-        {/* SELECTION SECTION */}
-        <div className="w-full p-4 flex-grow space-y-4">
-            <CardHeader className="p4">
-              <CardTitle className="text-xl font-semibold">Preferences</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="flex flex-col space-y-4">
-                <div className="flex flex-row space-x-2">
-                <Label className="text-sm">Player Count:</Label>
-                  <Select value={playerCount} onValueChange={setPlayerCount}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select player count"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="1">1</SelectItem>
-                      <SelectItem value="2">2</SelectItem>
-                      <SelectItem value="3">3</SelectItem>
-                      <SelectItem value="4">4</SelectItem>
-                      <SelectItem value="5">5</SelectItem>
-                      <SelectItem value="6">6</SelectItem>
-                      <SelectItem value="7">7</SelectItem>
-                      <SelectItem value="8">8</SelectItem>
-                      <SelectItem value="9">9</SelectItem>
-                      <SelectItem value="10+">10+</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                
-                <div className="flex flex-row space-x-2">
-                  <Label className="text-sm">Playing Time:</Label>
-                  <Select value={playingTime} onValueChange={setPlayingTime}>
-                    <SelectTrigger className="w-48">
-                      <SelectValue placeholder="Select playing time"/>
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="Quick (< 30 mins)">{"Quick (<30 mins)"}</SelectItem>
-                      <SelectItem value="Short (30-60 mins)">{"Short (30-60 mins)"}</SelectItem>
-                      <SelectItem value="Medium (1-2 hours)">{"Medium (1-2 hours)"}</SelectItem>
-                      <SelectItem value="Long (2-4 hours)">{"Long (2-4 hours)"}</SelectItem>
-                      <SelectItem value="Super Long (4+ hours)">{"Super Long (4+ hours)"}</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-          </CardContent>
-          <CardContent>
-            <Button
-              className="max-w-s"
-              disabled={!image || isLoading}
-              onClick={makeRecommendations}
-            >
-              {buttonText}
-              {isLoading && (
-                <Spinner size="small" className="text-gray-50" />
-              )}
-            </Button>
-          </CardContent>
+    <div className="md:w-1/2 w-full flex flex-col gap-2 mt-2 md:mt-0">
 
-          {/*Recommendation Section*/}
-          <CardContent>
-            <h3 className="text-xl font-semibold mb-2">Recommendations:</h3>
-            <div className="mt-2 p-4 h-100 overflow-y-auto leading-relaxed custom-scrollbar">
+      {/* Card 1: Preferences */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">Preferences</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="flex flex-row items-center space-x-2">
+            <Label className="w-24 text-sm">Player Count:</Label>
+            <Select value={playerCount} onValueChange={setPlayerCount}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="1">1</SelectItem>
+                  <SelectItem value="2">2</SelectItem>
+                  <SelectItem value="3">3</SelectItem>
+                  <SelectItem value="4">4</SelectItem>
+                  <SelectItem value="5">5</SelectItem>
+                  <SelectItem value="6">6</SelectItem>
+                  <SelectItem value="7">7</SelectItem>
+                  <SelectItem value="8">8</SelectItem>
+                  <SelectItem value="9">9</SelectItem>
+                  <SelectItem value="10+">10+</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="flex flex-row items-center space-x-2">
+            <Label className="w-24 text-sm">Playing Time:</Label>
+            <Select value={playingTime} onValueChange={setPlayingTime}>
+              <SelectTrigger className="w-48">
+                <SelectValue placeholder="Select..." />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Quick (< 30 mins)">{"Quick (<30 mins)"}</SelectItem>
+                  <SelectItem value="Short (30-60 mins)">{"Short (30-60 mins)"}</SelectItem>
+                  <SelectItem value="Medium (1-2 hours)">{"Medium (1-2 hours)"}</SelectItem>
+                  <SelectItem value="Long (2-4 hours)">{"Long (2-4 hours)"}</SelectItem>
+                  <SelectItem value="Super Long (4+ hours)">{"Super Long (4+ hours)"}</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardContent>
+        <CardFooter>
+          <Button
+            className="w-full sm:w-auto" 
+            disabled={!image || isLoading}
+            onClick={makeRecommendations}
+          >
+            {isLoading ? (
+              <>
+                Loading...
+                <Spinner size="small" className="ml-2 h-4 w-4 text-white" />
+              </>
+            ) : (
+              "Recommend Games"
+            )}
+          </Button>
+        </CardFooter>
+      </Card>
+
+      {/* Card 2: Recommendations */}
+      <Card className="flex-grow flex flex-col">
+        <CardHeader>
+          <CardTitle className="text-xl font-bold">Recommendations</CardTitle>
+        </CardHeader>
+        <CardContent className="flex-grow overflow-y-auto">
+            <div className="prose max-w-none">
               {directRecommendationOutput ? (
-                <div className="prose">
-                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                    {directRecommendationOutput}
-                  </ReactMarkdown>
-                </div>
+                <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                  {directRecommendationOutput}
+                </ReactMarkdown>
               ) : (
-                <p className="text-gray-300">Recommendations will appear here...</p>
+                <p className="text-border">Recommendations will appear here...</p>
               )}
             </div>
-          </CardContent>
-        </div>
+        </CardContent>
+      </Card>
 
-      </div>
     </div>
+  </div>
+</div>
   );
 }

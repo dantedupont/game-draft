@@ -207,7 +207,7 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
     return(
         <div className="flex-grow flex flex-col min-h-0">
             {isMobile ? (
-              <div className="relative w-full bg-gray-100 rounded-lg overflow-hidden"
+              <div className="relative w-full rounded-lg overflow-hidden bg-card"
               style={videoContainerHeight ? 
                 { height: `${videoContainerHeight}px` } 
                 : {minHeight: 300}}
@@ -233,12 +233,12 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                     {cameraStatus !== 'active' && (
                       <div className="p-4 flex items-center justify-center text-center">
                         {cameraStatus === 'idle' && (
-                          <p className="text-lg text-gray-500 flex items-center">Initializing camera...</p>
+                          <p className="text-lg text-border flex items-center">Initializing camera...</p>
                         )}
                         {cameraStatus === 'loading' && (
-                          <p className="text-lg text-gray-500">
+                          <p className="text-lg text-border">
                             Please allow camera access when prompted
-                            <span className="animate-pulse text-gray-500 text-xs"> ● ● ●</span>
+                            <span className="animate-pulse text-border text-xs"> ● ● ●</span>
                           </p>
                         )}
                         {cameraStatus === 'error' && (
@@ -316,10 +316,10 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
             ) : (
               // if not mobile, show drag and drop area
               <div className={clsx(
-                "relative w-full max-h-64 flex-grow bg-gray-50 rounded-lg overflow-hidden",
+                "relative w-full max-h-64 flex-grow bg-card rounded-lg overflow-hidden",
                 "border-2 border-dashed transition-colors duration-200",
                 "flex items-center justify-center",
-                isDraggingOver ? "border-indigo-600" : "border-gray-300"
+                isDraggingOver ? "border-primary/50" : "border-border"
               )}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
@@ -335,7 +335,7 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                     sizes="100vw"
                   />
                 ) : (
-                  <p className={clsx("text-lg transition-colors duration-200 text-gray-300", isDraggingOver && "text-indigo-600")}>
+                  <p className={clsx("text-lg transition-colors duration-200 text-border", isDraggingOver && "text-primary/60")}>
                     Drag and Drop Here
                   </p>
                 )}
