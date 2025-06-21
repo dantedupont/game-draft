@@ -2,8 +2,11 @@ import './globals.css'
 import { TRPCProvider } from '@/trpc/provider'
 
 export const metadata = {
-  title: "Game Drafter",
-  description: "Web app to help you choose a game for game night"
+  title: "Game Draft",
+  description: "Web app to help you choose a game for game night",
+  icons: {
+    icon: './logo.svg'
+  }
 }
 
 export const viewport = {

@@ -363,10 +363,10 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                     sizes="100vw"
                   />
                 ) : (
-                  <p className={clsx("text-lg transition-colors duration-200 text-border", isDraggingOver && "text-primary/60")}>
+                  <p className={clsx("text-lg transition-colors duration-200 text-border text-center", isDraggingOver && "text-primary/60")}>
                     Drag and Drop Here
                     <br />
-                    <p className="text-sm text-center">or click to upload</p>
+                    <span className="text-sm">or click to upload</span>
                   </p>
                 )}
               </div>
