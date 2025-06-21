@@ -150,17 +150,17 @@ export default function HomePage(){
     ]); // Removed AI SDK completion dependencies
 
   return (
-   <div className="min-h-screen bg-background flex flex-col p-3 font-inter items-center">
-  <Toaster position="bottom-center" richColors />
+    <div className="min-h-screen bg-background flex flex-col p-3 font-inter items-center">
+    <Toaster position="bottom-center" richColors />
 
-  <div className="w-full max-w-6xl md:flex md:gap-2 flex-grow">
+    <div className="w-full max-w-6xl md:flex md:gap-2 flex-grow">
 
     {/* --- LEFT COLUMN --- */}
     <div className="md:w-1/2 w-full flex flex-col">
       <Card className="flex-grow flex flex-col">
         <CardHeader className="flex flex-row items-center gap-1">
           <Image
-            src="/logov2.svg"
+            src="/logo.svg"
             alt="Game Draft Logo"
             width={512}
             height={512}
