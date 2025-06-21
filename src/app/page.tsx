@@ -160,7 +160,7 @@ export default function HomePage(){
       <Card className="flex-grow flex flex-col">
         <CardHeader className="flex flex-row items-center gap-1">
           <Image
-            src="/logo.svg"
+            src="/page-logo.svg"
             alt="Game Draft Logo"
             width={512}
             height={512}

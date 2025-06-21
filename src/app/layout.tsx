@@ -5,7 +5,7 @@ export const metadata = {
   title: "Game Draft",
   description: "Web app to help you choose a game for game night",
   icons: {
-    icon: './logo.svg'
+    icon: './favicon.svg'
   }
 }
 
