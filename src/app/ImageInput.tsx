@@ -170,6 +170,27 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
     ////////////////////////
     //DESKTOP DRAG AND DROP/
     ////////////////////////
+    const fileInputRef = useRef<HTMLInputElement>(null);
+
+    const processFile = useCallback((file: File) => {
+      if(!file) return;
+
+       // making sure its an image
+      if (!file.type.startsWith('image/')){
+          toast.error('Invalid file: please use an image file')
+          return;
+      }
+      const reader = new FileReader()
+
+      reader.onload = (event) => {
+        if(event.target?.result && typeof event.target.result === "string"){
+          setImage(event.target.result)
+          toast.success("Image uploaded!")
+        }
+      }
+        reader.readAsDataURL(file)
+    }, [setImage])
+
     const handleDragOver = useCallback((event: React.DragEvent<HTMLDivElement>) => {
         event.preventDefault()
         setIsDraggingOver(true)
@@ -183,26 +204,24 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
         setIsDraggingOver(false)
 
         if (event.dataTransfer.files.length > 0){
-        const file = event.dataTransfer.files[0]
-
-        // making sure its an image
-        if (!file.type.startsWith('image/')){
-            toast.error('Invalid file: please use an image file')
-            return;
+          const file = event.dataTransfer.files[0]
+          processFile(file)
         }
 
-        const reader = new FileReader()
+    }, [processFile])
+    const handleAreaClick = () => {
+      fileInputRef.current?.click();
+    }
+    
+    const handleFileChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+      event.preventDefault()
+      setIsDraggingOver(false)
 
-        reader.onload = (event) => {
-            if(event.target?.result && typeof event.target.result === "string"){
-            setImage(event.target.result)
-            toast.success("Image uploaded!")
-            }
-        }
-        reader.readAsDataURL(file)
-        }
-
-    },[setImage])
+      const file = event.target.files?.[0]
+      if (file){
+        processFile(file)
+      }
+    }, [processFile])
 
     return(
         <div className="flex-grow flex flex-col min-h-0">
@@ -318,13 +337,22 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
               <div className={clsx(
                 "relative w-full max-h-64 flex-grow bg-card rounded-lg overflow-hidden",
                 "border-2 border-dashed transition-colors duration-200",
+                "cursor-pointer",
                 "flex items-center justify-center",
                 isDraggingOver ? "border-primary/50" : "border-border"
               )}
                 onDragOver={handleDragOver}
                 onDragLeave={handleDragLeave}
                 onDrop={handleDrop}
+                onClick={handleAreaClick}
               >
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+                accept="image/*"
+              /> 
                 {image ? (
                   <Image 
                     src={image}
@@ -337,6 +365,8 @@ export default function ImageInput({ image, setImage, isMobile, onImageClear }: 
                 ) : (
                   <p className={clsx("text-lg transition-colors duration-200 text-border", isDraggingOver && "text-primary/60")}>
                     Drag and Drop Here
+                    <br />
+                    <p className="text-sm text-center">or click to upload</p>
                   </p>
                 )}
               </div>

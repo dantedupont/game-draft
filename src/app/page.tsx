@@ -48,7 +48,7 @@ export default function HomePage(){
     setDirectRecommendationOutput('');
 
     if (!image) {
-      toast.error("Please capture or select an image first.");
+      toast.error("Please provide an image first.");
       return;
     }
     if (!playerCount || !playingTime) {
@@ -167,7 +167,7 @@ export default function HomePage(){
             className="h-10 w-auto" 
           />
           <CardTitle className="text-xl font-bold">
-            {isMobile ? "Capture Your Collection" : "Upload Your Collection"}
+            {isMobile ? "Snap Some Games" : "Upload Your Collection"}
           </CardTitle>
         </CardHeader>
         <CardContent className="flex-grow flex flex-col">
